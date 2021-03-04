@@ -895,6 +895,72 @@ enrichment.fgseaSimple <- function(standarized=NULL,ssce=NULL,functional_groups=
   return(lenrichment)
 }
 
+#Calculo de enriquecimiento considerando una red Bipartita GO-Genes
+# Para cada GO se acumula el score de cada gen (expresion, Zvalue, o Zcentered)
+# y se compara con 1000 recableado de la relacion GO<->gene
+# devuelve un valor z para cada categoria ((z - mu_0)/sd_0)
+# TODO: agregar para que duevla p-value
+enrichment.ZGO <- function(inputGOs, sceZ, org="Mm", pvmin=0.05, seed =  123457, 
+                           nRND1 = 1000,
+                           evGO=c("EXP", "IDA", "IPI", "IMP", "IGI", "IEP", 
+                                  "HTP", "HDA", "HMP", "HGI", "HEP")){
+  
+  db <- paste0("org.",org,".eg.db")
+  
+  # . Prepraro categorias GO
+  require(db)
+  #inputGOs <- enrichZpos[[1]]$pathway
+  db1 <- paste0("org.",org,".egGO2ALLEGS")
+  db2 <- paste0("org.",org,".egSYMBOL")
+  a<-mget(unique(inputGOs),db1)
+  goCats<-lapply(a,function(x){
+    x<-x[names(x)%in%evGO] #mapeos con evidencia apropiada
+    x<-unlist(mget(x,db2,ifnotfound = NA))
+    x<-x[x%in%rownames(sceZ)]
+    return(unique(x))
+  })
+  
+  # . armo la matriz GO/Gene
+  genesByGO<-lapply(names(a),function(x){
+    cbind(rep(x,length(goCats[[x]])),goCats[[x]])
+  })
+  names(genesByGO) <- names(a)
+  res<-c()
+  for(i in seq_along(genesByGO)){
+    res<-rbind(res,genesByGO[[i]])
+  }
+  ugenes <- unique(res[,2])
+  i <- match(res[,1],names(genesByGO))
+  j <- match(res[,2],ugenes)
+  mGOgene<-sparseMatrix(i,j,1)
+  colnames(mGOgene)<-ugenes
+  rownames(mGOgene)<-names(genesByGO)
+  
+  observed <- mGOgene %*% sceZ[colnames(mGOgene),]
+  
+  # . rnd1: GO-gene
+  set.seed(seed)
+  t1 <- Sys.time()
+  
+  for(i in 1:nRND1){
+    cat("\r", sprintf("%.1f", 100*i/nRND1), "%")
+    
+    rndGOgene <- t(apply(mGOgene,1,sample,ncol(mGOgene)))
+    a <- rndGOgene %*% sceZ[colnames(mGOgene),]
+    if(i==1){
+      accum <- a
+      accum2<- a^2
+    }else{
+      accum <- accum + a
+      accum2<- accum2+ a^2
+    }
+  }
+  zobs <- (observed - accum/nRND1)/sqrt(accum2/nRND1-(accum/nRND1)^2)
+  t2 <- Sys.time()
+  t2-t1
+  return(zobs)
+}
+
 
 # getNESpartition:
 #  Devuelve la particion con clusters definidos originalmente en 'lab'
