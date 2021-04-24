@@ -659,7 +659,7 @@ relativizeExpression<-function(sce,g=NULL,bStandarize=FALSE, remove.zeros=TRUE,
 # Output:
 # lista con matrices: mu, centered y Z
 standarizeCellExpression<-function(sce,g){ 
-  k        <- degree(g)
+  k        <- igraph::degree(g)
   neigbs   <- get.adjacency(g,sparse = TRUE)
   Matrix::diag(neigbs) <- 1
   
