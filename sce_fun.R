@@ -490,7 +490,9 @@ exportGraphToGephi<-function(sce,gg,file.name="foo"){
   a<-maux[,1]%in%linkedNodes
   if(all(!a)) a<-rownames(maux)%in%linkedNodes
   maux<-maux[a,]
-  colnames(maux)[1]<-"Id"
+  #colnames(maux)[1]<-"Id"
+  maux <- cbind(Id=rownames(maux),maux)
+  
   aux <- grep("percent_top",colnames(maux))
   if(length(aux)>0) maux <- maux[,-aux]
   
@@ -505,7 +507,7 @@ exportGraphToGephi<-function(sce,gg,file.name="foo"){
   
   write.table(maux,sep=",",row.names=FALSE,col.names=TRUE,file=paste0(file.name,".nodes.csv"),quote=FALSE)
   
-  cat("Geaph exported.\n")
+  cat("Graph exported.\n")
 }
 
 communicabilityDistance<-function(gr,cells,sce){
