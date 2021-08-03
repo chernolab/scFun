@@ -432,7 +432,7 @@ getCentroidCells<-function(sce,gg,labelcolname=NULL){
 # input: 
 #  g   : igraph graph
 #  memb: named membership vector
-#  wlabel: name of the igraph edge attribute with weights to be used to merge clusters
+#  wlabel: name of the igraph edge attribute with weights to be used  to merge clusters
 #  factorIntra: factor to downweight intra-cluster weights
 getClustersGraph <-function(g, memb, wlabel=NULL,factorIntra=1){
   
